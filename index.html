@@ -1,0 +1,267 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Simple Shopping Cart</title>
+  <style>
+    :root{
+      --bg:#f6f8fb;
+      --card:#ffffff;
+      --accent:#2563eb;
+      --muted:#6b7280;
+      --radius:12px;
+      --shadow: 0 8px 30px rgba(15,23,42,0.06);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+    }
+    html,body{height:100%;}
+    body{
+      margin:0;
+      background:linear-gradient(180deg,var(--bg),#eef2ff 120%);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:24px;
+    }
+
+    .card{
+      width:100%;
+      max-width:720px;
+      background:var(--card);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      padding:28px;
+    }
+
+    h1{
+      margin:0 0 8px 0;
+      font-size:20px;
+      color:#0f172a;
+    }
+    p.lead{margin:0 0 18px 0;color:var(--muted);font-size:14px}
+
+    form {
+      display:grid;
+      grid-template-columns:1fr 220px;
+      gap:12px;
+      align-items:end;
+    }
+
+    label{
+      display:block;
+      font-size:13px;
+      color:#374151;
+      margin-bottom:6px;
+    }
+
+    .input, select{
+      width:100%;
+      padding:10px 12px;
+      border-radius:10px;
+      border:1px solid #e6e9ef;
+      background:white;
+      font-size:15px;
+      box-sizing:border-box;
+    }
+
+    .small{
+      grid-column: 1 / -1;
+      display:flex;
+      gap:12px;
+    }
+
+    .actions{
+      display:flex;
+      gap:10px;
+      justify-content:flex-end;
+      margin-top:16px;
+    }
+
+    button{
+      background:var(--accent);
+      color:white;
+      border:0;
+      padding:10px 14px;
+      border-radius:10px;
+      font-weight:600;
+      cursor:pointer;
+    }
+
+    button.secondary{
+      background:transparent;
+      color:var(--muted);
+      border:1px solid #e6e9ef;
+    }
+
+    .result{
+      margin-top:18px;
+      padding:14px;
+      border-radius:10px;
+      background:#f8fafc;
+      border:1px solid #eef2ff;
+      display:flex;
+      justify-content:space-between;
+      gap:12px;
+      align-items:center;
+    }
+
+    .result .left{color:#0f172a}
+    .result .right{font-weight:700;font-size:18px;color:var(--accent)}
+
+    @media (max-width:640px){
+      form{grid-template-columns:1fr; }
+      .small{flex-direction:column}
+      .actions{justify-content:stretch}
+    }
+
+  </style>
+</head>
+<body>
+  <main class="card" role="main">
+    <h1>Shopping Cart (web)</h1>
+    <p class="lead">Type an item, price and quantity — the site calculates the total for you.</p>
+
+    <form id="cartForm" autocomplete="off">
+      <div>
+        <label for="item">What item would you like to buy?</label>
+        <input id="item" class="input" type="text" placeholder="e.g. T-shirt" required />
+      </div>
+
+      <div>
+        <label for="currency">Currency</label>
+        <select id="currency" class="input" title="Select currency">
+          <option value="USD" selected>USD — $</option>
+          <option value="CAD">CAD — $</option>
+          <option value="EUR">EUR — €</option>
+          <option value="GBP">GBP — £</option>
+        </select>
+      </div>
+
+      <div>
+        <label for="price">Enter the price</label>
+        <input id="price" class="input" type="number" inputmode="decimal" step="0.01" min="0" placeholder="0.00" required />
+      </div>
+
+      <div>
+        <label for="quantity">Enter the quantity</label>
+        <input id="quantity" class="input" type="number" step="1" min="1" value="1" required />
+      </div>
+
+      <div class="small" style="grid-column:1 / -1;">
+        <div style="flex:1">
+          <label>Extra</label>
+          <div style="display:flex;gap:8px">
+            <button type="button" id="decrease" class="secondary">−</button>
+            <div style="flex:1;display:flex;align-items:center;justify-content:center;border-radius:10px;border:1px solid #e6e9ef;padding:8px;background:#fff">
+              Quantity quick controls
+            </div>
+            <button type="button" id="increase" class="secondary">+</button>
+          </div>
+        </div>
+        <div style="width:260px">
+          <label>&nbsp;</label>
+          <div style="display:flex;gap:8px">
+            <button type="button" id="clear" class="secondary" style="flex:1">Clear</button>
+            <button type="submit" style="flex:1">Calculate</button>
+          </div>
+        </div>
+      </div>
+    </form>
+
+    <div id="output" class="result" aria-live="polite" style="display:none">
+      <div class="left" id="outputText">You bought ...</div>
+      <div class="right" id="outputTotal">$0.00</div>
+    </div>
+  </main>
+
+  <script>
+    // Grab elements
+    const form = document.getElementById('cartForm');
+    const itemEl = document.getElementById('item');
+    const priceEl = document.getElementById('price');
+    const quantityEl = document.getElementById('quantity');
+    const currencyEl = document.getElementById('currency');
+    const output = document.getElementById('output');
+    const outputText = document.getElementById('outputText');
+    const outputTotal = document.getElementById('outputTotal');
+
+    const increaseBtn = document.getElementById('increase');
+    const decreaseBtn = document.getElementById('decrease');
+    const clearBtn = document.getElementById('clear');
+
+    // Format money using Intl.NumberFormat
+    function formatMoney(amount, currencyCode){
+      try{
+        return new Intl.NumberFormat(undefined, { style: 'currency', currency: currencyCode, maximumFractionDigits: 2 }).format(amount);
+      } catch(e){
+        // fallback if currency code not supported
+        return (currencyCode === 'EUR' ? '€' : currencyCode === 'GBP' ? '£' : '$') + amount.toFixed(2);
+      }
+    }
+
+    function calculateAndShow(){
+      const item = itemEl.value.trim() || "item";
+      const price = Number(priceEl.value);
+      const quantity = parseInt(quantityEl.value, 10);
+
+      // Basic validation
+      if (Number.isNaN(price) || price < 0 || Number.isNaN(quantity) || quantity < 1) {
+        output.style.display = 'none';
+        return;
+      }
+
+      // Calculate total (careful: use arithmetic as numbers)
+      const total = (price * quantity);
+
+      const currencyCode = currencyEl.value || 'USD';
+      const formattedTotal = formatMoney(total, currencyCode);
+      const formattedPrice = formatMoney(price, currencyCode);
+
+      outputText.textContent = `You bought ${quantity} ${item}${quantity>1 ? 's' : ''} — ${formattedPrice} each.`;
+      outputTotal.textContent = formattedTotal;
+      output.style.display = 'flex';
+    }
+
+    // Form submit
+    form.addEventListener('submit', function(e){
+      e.preventDefault();
+      calculateAndShow();
+    });
+
+    // Quick controls
+    increaseBtn.addEventListener('click', () => {
+      quantityEl.value = Math.max(1, (parseInt(quantityEl.value,10) || 1) + 1);
+      calculateAndShow();
+    });
+
+    decreaseBtn.addEventListener('click', () => {
+      quantityEl.value = Math.max(1, (parseInt(quantityEl.value,10) || 1) - 1);
+      calculateAndShow();
+    });
+
+    clearBtn.addEventListener('click', () => {
+      itemEl.value = '';
+      priceEl.value = '';
+      quantityEl.value = '1';
+      currencyEl.value = 'USD';
+      output.style.display = 'none';
+    });
+
+    // Live update when changing inputs
+    [priceEl, quantityEl, currencyEl, itemEl].forEach(el => {
+      el.addEventListener('input', () => {
+        // Only show live if price and quantity valid
+        if (priceEl.value !== '' && quantityEl.value !== '') {
+          calculateAndShow();
+        }
+      });
+    });
+
+    // Initial example values (optional)
+    itemEl.value = "Apple";
+    priceEl.value = "1.25";
+    quantityEl.value = "3";
+    calculateAndShow();
+  </script>
+</body>
+</html>
