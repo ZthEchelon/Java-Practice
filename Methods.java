@@ -22,8 +22,17 @@ public class Methods{
         happyBirthday(name, age);
         happyBirthday(name, age);
 
+        System.out.println(squarer(age));
+
+        if (ageCheck(age)){
+            System.out.println("Come on in and get alchohol");
+        }
+        else{ System.out.println("get outta here yn");}
+
 
     }
+
+
     //method creation
 
     // to receive values in method created must have the data type (ex int, char) set
@@ -35,7 +44,29 @@ public class Methods{
         System.out.println("You are as Old (or Young) as you want to be :) " + a);
         System.out.println("HAPPY BIRTHDAYYY");
 
-
     }
 
+    
+    
+    // 2nd method created
+    // if method is not returning anything list data type as void
+    // if it will return something change data type
+    static double squarer(int a){
+
+
+        return a*a;
+    }
+
+    static String nameAppender (String FirstName, String LastName){
+        return FirstName + " " + LastName;
+    }
+
+    static boolean ageCheck (int age){ //method to check legal age
+
+        return age >= 18; // this will return true or false.
+    }
+
+    //
+
 }
+
